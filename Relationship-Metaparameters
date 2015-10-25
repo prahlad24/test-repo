@@ -1,0 +1,54 @@
+Puppet uses four meta-parameters to establish relationships, and you can set each of them as an attribute in any resource. The value of any relationship meta-parameter should be a resource reference (or array of references) pointing to one or more target resources.
+
+before — Applies a resource before the target resource.
+require — Applies a resource after the target resource.
+notify — Applies a resource before the target resource. The target resource refreshes if the notifying resource changes.
+subscribe — Applies a resource after the target resource. The subscribing resource refreshes if the target resource changes.
+If two resources need to happen in order, you can either put a before attribute in the prior one or a require attribute in the subsequent one; either approach creates the same relationship. The same is true of notify and subscribe.
+
+The two examples below create the same ordering relationship:
+
+package { 'openssh-server':
+  ensure => present,
+  before => File['/etc/ssh/sshd_config'],
+}
+ file { '/etc/ssh/sshd_config':
+  ensure  => file,
+  mode    => '0600',
+  source  => 'puppet:///modules/sshd/sshd_config',
+  require => Package['openssh-server'],
+}
+
+The two examples below create the same notification relationship:
+
+file { '/etc/ssh/sshd_config':
+  ensure => file,
+  mode   => '0600',
+  source => 'puppet:///modules/sshd/sshd_config',
+  notify => Service['sshd'],
+}
+ service { 'sshd':
+  ensure    => running,
+  enable    => true,
+  subscribe => File['/etc/ssh/sshd_config'],
+}
+Since an array of resource references can contain resources of differing types, these two examples also create the same ordering relationship:
+
+service { 'sshd':
+  ensure  => running,
+  require => [
+    Package['openssh-server'],
+    File['/etc/ssh/sshd_config'],
+  ],
+}
+ package { 'openssh-server':
+  ensure => present,
+  before => Service['sshd'],
+}
+
+file { '/etc/ssh/sshd_config':
+  ensure => file,
+  mode   => '0600',
+  source => 'puppet:///modules/sshd/sshd_config',
+  before => Service['sshd'],
+}
