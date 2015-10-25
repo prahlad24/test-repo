@@ -1,0 +1,4 @@
+package { 'curl':
+ensure => 'present',
+}
+
